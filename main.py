@@ -1,5 +1,5 @@
 import requests
-
+import vk_api
 
 class VkApiClient:
     def __init__(self, token: str, api_version: str, user_ids: str, base_url: str = "https://api.vk.com"):

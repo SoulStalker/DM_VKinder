@@ -131,4 +131,6 @@ dmypy.json
 #DSN with password file
 dsn.txt
 
+#Token
+vktoken.txt
 .\idea

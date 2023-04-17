@@ -3,9 +3,6 @@ from random import randrange
 import vk_api
 from vk_api.longpoll import VkLongPoll, VkEventType
 
-# class VkApiClient:
-
-
 with open('vktoken.txt', encoding='utf-8') as vk_file:
     # токен ВК из файла
     token = vk_file.read()

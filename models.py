@@ -5,27 +5,31 @@ from database import db_engine
 Base = declarative_base()
 
 
-class User(Base):
-    __tablename__ = 'users'
-    id = Column(Integer, primary_key=True)
-    vk_id = Column(Integer, unique=True)
-    last_name = Column(String)
-    age = Column(Integer)
-    sex = Column(Integer)
-    city = Column(String)
-    status = Column(String)
-    found = Column(Boolean, default=False)
-    favorite = Column(Boolean, default=False)
-    blacklisted = Column(Boolean, default=False)
+class SearchResults(Base):
+    __tablename__ = 'search_results'
 
-
-class Photo(Base):
-    __tablename__ = 'photos'
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer)
-    photo_id = Column(String)
+    person_id = Column(Integer)
+    photo_url = Column(String)
     likes = Column(Integer)
     comments = Column(Integer)
+
+
+class Favorites(Base):
+    __tablename__ = 'favorites'
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer)
+    person_id = Column(Integer)
+
+
+class Blacklist(Base):
+    __tablename__ = 'blacklist'
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer)
+    person_id = Column(Integer)
 
 
 def create_db():

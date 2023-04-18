@@ -2,13 +2,37 @@ from random import randrange
 
 import vk_api
 from vk_api.longpoll import VkLongPoll, VkEventType
+from auth import gr_token, login, passwd
 
-with open('vktoken.txt', encoding='utf-8') as vk_file:
-    # токен ВК из файла
-    token = vk_file.read()
 
-vk_session = vk_api.VkApi(token=token)
-longpoll = VkLongPoll(vk_session)
+gr_session = vk_api.VkApi(token=gr_token)
+longpoll = VkLongPoll(gr_session)
+
+
+def auth_handler():
+    # При двухфакторной аутентификации вызывается эта функция.
+    key = input("Enter authentication code: ")
+    # Если: True - сохранить, False - не сохранять.
+    remember_device = True
+    return key, remember_device
+
+
+vk_session = vk_api.VkApi(login, passwd, auth_handler=auth_handler)
+
+# Попытка авторизации
+try:
+    vk_session.auth()
+except vk_api.exceptions.AuthError as error:
+    # Обработка ошибки авторизации
+    if error.code == 4:  # ошибка двухфакторной аутентификации
+        code = input('Введите код двухфакторной аутентификации: ')
+        vk_session.auth(code=code)
+    else:
+        raise error
+
+# Получение ключа доступа от имени пользователя
+vk = vk_session.get_api()
+access_token = vk_session.token['access_token']
 
 
 def write_msg(user_id, message):

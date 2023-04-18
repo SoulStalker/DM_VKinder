@@ -2,6 +2,7 @@ from random import randrange
 import datetime
 
 import vk_api
+import requests
 from vk_api.longpoll import VkLongPoll, VkEventType
 from auth import gr_token, login, passwd
 
@@ -40,7 +41,7 @@ def write_msg(user_id, message):
     gr_session.method('messages.send', {
         'user_id': user_id,
         'message': message,
-        'random_id': randrange(10 ** 7),
+        'random_id': randrange(10 ** 7)
     })
 
 
@@ -49,6 +50,42 @@ def get_user_info(user_id):
     vk = gr_session.get_api()
     user_info = vk.users.get(user_ids=user_id, fields='photo_max_orig,city,sex,bdate')
     return user_info[0]
+
+
+def get_top_photos(user_id):
+    vk = vk_session.get_api()
+
+    # Проверяем, является ли профиль пользователя приватным
+    user_info = vk.users.get(user_ids=user_id, fields='is_closed')[0]
+    if user_info['is_closed']:
+        return f"Профиль пользователя {user_id} является приватным"
+
+    # Получаем информацию о пользователе
+    user_info = vk.users.get(user_ids=user_id, fields='photo_max_orig')[0]
+    # Получаем список фотографий пользователя
+    photos = vk.photos.get(owner_id=user_id, album_id='profile', extended=1, count=100)
+    # Сортируем фотографии по количеству лайков
+    sorted_photos = sorted(photos['items'], key=lambda x: x['likes']['count'], reverse=True)
+    # Получаем топ-3 фотографии
+    top_photos = sorted_photos[:3]
+
+    # Отправляем фотографии и ссылку на пользователя в чат
+    message = f"Топ-3 популярных фотографии профиля {user_info['first_name']} {user_info['last_name']}: \n"
+    for photo in top_photos:
+        photo_url = photo['sizes'][-1]['url']
+        photo_data = requests.get(photo_url).content
+        upload_url = vk.photos.getMessagesUploadServer()['upload_url']
+        response = requests.post(upload_url, files={'photo': ('photo.jpg', photo_data)})
+        result = response.json()
+
+        # Сохранение фотографии на сервере ВКонтакте
+        photo = vk.photos.saveMessagesPhoto(server=result['server'], photo=result['photo'], hash=result['hash'])[0]
+        # Отправка сообщения с фотографией
+        # vk.messages.send(user_id=user_id, attachment=f'photo{photo["owner_id"]}_{photo["id"]}')
+        message += f"{photo['likes']['count']} лайков - {photo['sizes'][-1]['url']}n"
+        message += f"Ссылка на профиль: https://vk.com/id{user_id}"
+
+    return message
 
 
 def search_users(user_id):
@@ -68,7 +105,8 @@ def search_users(user_id):
 
     # Вывод результатов
     for user in users['items']:
-        print(user['first_name'], user['last_name'])
+        write_msg(user_id, get_top_photos(user['id']))
+
 
 
 def vk_long_poll():

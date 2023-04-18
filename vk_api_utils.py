@@ -1,4 +1,5 @@
 from random import randrange
+import datetime
 
 import vk_api
 from vk_api.longpoll import VkLongPoll, VkEventType
@@ -36,7 +37,7 @@ access_token = vk_session.token['access_token']
 
 
 def write_msg(user_id, message):
-    vk_session.method('messages.send', {
+    gr_session.method('messages.send', {
         'user_id': user_id,
         'message': message,
         'random_id': randrange(10 ** 7),
@@ -44,24 +45,26 @@ def write_msg(user_id, message):
 
 
 def get_user_info(user_id):
-    #получение данных о пользователе по его id
-    vk = vk_session.get_api()
+    # получение данных о пользователе по его id
+    vk = gr_session.get_api()
     user_info = vk.users.get(user_ids=user_id, fields='photo_max_orig,city,sex,bdate')
-    return user_info[0]['first_name']
+    return user_info[0]
 
 
-def search_users():
-    params = {
-        'sex': 1,  # пол (1 - женский, 2 - мужской)
-        'age_from': 18,  # возраст от
-        'age_to': 30,  # возраст до
-        'city': 1,  # город (1 - Москва)
-        'status': 1  # семейное положение (1 - не женат/не замужем)
-    }
-
-    # Поиск пользователей
+def search_users(user_id):
+    current_year = datetime.datetime.now().year
+    user_info = get_user_info(user_id)
     vk = vk_session.get_api()
-    users = vk.users.search(**params)
+    users = vk.users.search(
+        q='',  # Пустой запрос, чтобы получить всех пользователей
+        city=user_info['city']['id'],
+        age_from=current_year - int(user_info['bdate'].split('.')[2]),
+        age_to=current_year - int(user_info['bdate'].split('.')[2]),
+        sex=1 if user_info['sex'] == 2 else 2,
+        # Противоположный пол (1 - женский, 2 - мужской)
+        status=user_info.get('relation', 1)
+        # Семейное положение пользователя, если не указан, то ставим 1, то есть не женаты / не замужем
+        )
 
     # Вывод результатов
     for user in users['items']:
@@ -71,16 +74,15 @@ def search_users():
 def vk_long_poll():
     for event in longpoll.listen():
         if event.type == VkEventType.MESSAGE_NEW:
-
             if event.to_me:
                 request = event.text.lower()
                 user_id = event.user_id
 
                 if request == "привет":
-                    write_msg(user_id, f"Привет, {get_user_info(user_id)}")
+                    write_msg(user_id, f"Привет, {get_user_info(user_id)['first_name']}")
                 elif request == "пока":
                     write_msg(user_id, f"Пока, {get_user_info(user_id)}")
                 elif request == "поиск":
-                    search_users()
+                    search_users(user_id)
                 else:
                     write_msg(user_id, "Не понял вашего ответа...")

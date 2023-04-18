@@ -134,3 +134,5 @@ dsn.txt
 #Token
 vktoken.txt
 .\idea
+auth.py
+vk_config.v2.json

@@ -22,15 +22,15 @@ def insert_data(db: db, model: DeclarativeMeta, kw_data: dict):
 
 def save_search_results(user_id, search_results):
     # сохранение данных о результатах поиска в базу
-    for result in search_results:
-        data = {
-            'user_id': user_id,
-            'person_id': result['person_id'],
-            'photo_url': result['photo_url'],
-            'likes': result['likes'],
-            'comments': result['comments']
-        }
-        insert_data(db, SearchResults, data)
+    # for result in search_results:
+    data = {
+        'user_id': user_id,
+        'person_id': search_results['person_id'],
+        'photo_url': search_results['photo_url']
+    }
+    insert_data(db, SearchResults, data)
+
+
 
     # def add_to_favorites(self, user_id, person_id):
     #     self.cursor.execute('INSERT INTO favorites VALUES (%s, %s)', (user_id, person_id))

@@ -12,8 +12,6 @@ class SearchResults(Base):
     user_id = Column(Integer)
     person_id = Column(Integer)
     photo_url = Column(String)
-    likes = Column(Integer)
-    comments = Column(Integer)
 
 
 class Favorites(Base):

@@ -2,9 +2,9 @@ from random import randrange
 import datetime
 
 import vk_api
-import requests
 from vk_api.longpoll import VkLongPoll, VkEventType
 from auth import gr_token, login, passwd
+from db_ops import save_search_results
 
 gr_session = vk_api.VkApi(token=gr_token)
 gr = gr_session.get_api()
@@ -19,7 +19,6 @@ def auth_handler():
 
 
 vk_session = vk_api.VkApi(login, passwd, auth_handler=auth_handler)
-
 # Попытка авторизации
 try:
     vk_session.auth()
@@ -31,8 +30,9 @@ except vk_api.exceptions.AuthError as error:
     else:
         raise error
 except vk_api.exceptions.Captcha as captcha:
-    captcha.sid  # Получение sid
-    captcha.get_url()  # Получить ссылку на изображение капчи
+    # это помогло мне избегать ошибки капчи
+    captcha.sid
+    captcha.get_url()
     captcha.get_image()
 
 vk = vk_session.get_api()
@@ -40,10 +40,16 @@ access_token = vk_session.token['access_token']
 
 
 def write_msg(id, text):
-    gr.messages.send(user_id=id, message=text, random_id=randrange(10 ** 7))
+    # функция отправки сообщения
+    gr.messages.send(
+        user_id=id,
+        message=text,
+        random_id=randrange(10 ** 7)
+    )
 
 
 def send_photo(id, url):
+    # функция отправки фото
     gr.messages.send(
         user_id=id,
         attachment=url,
@@ -61,10 +67,6 @@ def get_user_info(user_id):
 def get_top_photos(user_id):
     vk = vk_session.get_api()
     gr = gr_session.get_api()
-    # Проверяем, является ли профиль пользователя приватным
-    user_info = vk.users.get(user_ids=user_id, fields='is_closed')[0]
-    if user_info['is_closed']:
-        return
     # Получаем информацию о пользователе
     user_info = vk.users.get(user_ids=user_id, fields='photo_max_orig')[0]
     # Получение списка фотографий пользователя
@@ -76,7 +78,6 @@ def get_top_photos(user_id):
     photo_links = [f"photo{p['owner_id']}_{p['id']}" for p in top_photos]
     attachment = ",".join(photo_links)
     message = f"Ссылка на профиль: https://vk.com/id{user_id} \n"
-
     return message, attachment
 
 
@@ -95,10 +96,16 @@ def search_users(user_id):
         # Семейное положение пользователя, если не указан, то ставим 1, то есть не женаты / не замужем
     )
     for user in users['items']:
-        receive_data = get_top_photos(user['id'])
-        if receive_data:
-            write_msg(user_id, receive_data[0])
-            send_photo(user_id, receive_data[1])
+        # если профиль не закрыт
+        if not user['is_closed']:
+            print(user)
+            receive_data = get_top_photos(user['id'])
+            search_results = {'person_id': int(user['id']), 'photo_url': receive_data[1]}
+            if receive_data:
+                write_msg(user_id, receive_data[0])
+                send_photo(user_id, receive_data[1])
+                save_search_results(user_id, search_results)
+
 
 
 def vk_long_poll():

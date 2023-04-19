@@ -6,8 +6,8 @@ import requests
 from vk_api.longpoll import VkLongPoll, VkEventType
 from auth import gr_token, login, passwd
 
-
 gr_session = vk_api.VkApi(token=gr_token)
+gr = gr_session.get_api()
 longpoll = VkLongPoll(gr_session)
 
 
@@ -30,21 +30,25 @@ except vk_api.exceptions.AuthError as error:
         vk_session.auth(code=code)
     else:
         raise error
+except vk_api.exceptions.Captcha as captcha:
+    captcha.sid  # Получение sid
+    captcha.get_url()  # Получить ссылку на изображение капчи
+    captcha.get_image()
 
-# Получение ключа доступа от имени пользователя
 vk = vk_session.get_api()
 access_token = vk_session.token['access_token']
 
 
-def write_msg(user_id, message, attachment=None):
-    if attachment:
-        attachment = ', '.join(attachment)
-    gr_session.method('messages.send', {
-        'user_id': user_id,
-        'message': message,
-        'attachment': attachment,
-        'random_id': randrange(10 ** 7)
-    })
+def write_msg(id, text):
+    gr.messages.send(user_id=id, message=text, random_id=randrange(10 ** 7))
+
+
+def send_photo(id, url):
+    gr.messages.send(
+        user_id=id,
+        attachment=url,
+        random_id=randrange(10 ** 7)
+    )
 
 
 def get_user_info(user_id):
@@ -60,30 +64,19 @@ def get_top_photos(user_id):
     # Проверяем, является ли профиль пользователя приватным
     user_info = vk.users.get(user_ids=user_id, fields='is_closed')[0]
     if user_info['is_closed']:
-        return f"Профиль пользователя {user_id} является приватным"
-
+        return
     # Получаем информацию о пользователе
     user_info = vk.users.get(user_ids=user_id, fields='photo_max_orig')[0]
-    # Получаем список фотографий пользователя
-    photos = vk.photos.get(owner_id=user_id, album_id='profile', extended=1, count=100)
-    # Сортируем фотографии по количеству лайков
+    # Получение списка фотографий пользователя
+    photos = vk.photos.get(owner_id=user_id, album_id='profile', extended=1)
+    # Сортировка списка фотографий по количеству лайков
     sorted_photos = sorted(photos['items'], key=lambda x: x['likes']['count'], reverse=True)
-    # Получаем топ-3 фотографии
+    # Получение ссылок на три популярных фотографии
     top_photos = sorted_photos[:3]
-    # Отправляем фотографии и ссылку на пользователя в чат
-    message = f"Топ-3 популярных фотографии профиля {user_info['first_name']} {user_info['last_name']}: \n"
-    attachment = []
-    for top_photo in top_photos:
-        photo_url = top_photo['sizes'][-1]['url']
-        photo_data = requests.get(photo_url).content
-        upload_url = vk.photos.getMessagesUploadServer()['upload_url']
-        response = requests.post(upload_url, files={'photo': ('photo.jpg', photo_data)})
-        result = response.json()
-        # Сохранение фотографии на сервере ВКонтакте
-        photo = vk.photos.saveMessagesPhoto(server=result['server'], photo=result['photo'], hash=result['hash'])[0]
-        message += f"{top_photo['sizes'][-1]['url']} \n"
-        attachment.append(f'photo{photo["owner_id"]}_{photo["id"]}')
-    message += f"Ссылка на профиль: https://vk.com/id{user_id} \n"
+    photo_links = [f"photo{p['owner_id']}_{p['id']}" for p in top_photos]
+    attachment = ",".join(photo_links)
+    message = f"Ссылка на профиль: https://vk.com/id{user_id} \n"
+
     return message, attachment
 
 
@@ -100,10 +93,12 @@ def search_users(user_id):
         # Противоположный пол (1 - женский, 2 - мужской)
         status=user_info.get('relation', 1)
         # Семейное положение пользователя, если не указан, то ставим 1, то есть не женаты / не замужем
-        )
+    )
     for user in users['items']:
         receive_data = get_top_photos(user['id'])
-        write_msg(user_id, receive_data[0], receive_data[1])
+        if receive_data:
+            write_msg(user_id, receive_data[0])
+            send_photo(user_id, receive_data[1])
 
 
 def vk_long_poll():

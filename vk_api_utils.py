@@ -4,7 +4,7 @@ import datetime
 import vk_api
 from vk_api.longpoll import VkLongPoll, VkEventType
 from auth import gr_token, login, passwd
-from db_ops import save_search_results
+from db_ops import save_search_results, is_person_in_db
 
 gr_session = vk_api.VkApi(token=gr_token)
 gr = gr_session.get_api()
@@ -98,13 +98,15 @@ def search_users(user_id):
     for user in users['items']:
         # если профиль не закрыт
         if not user['is_closed']:
-            print(user)
             receive_data = get_top_photos(user['id'])
             search_results = {'person_id': int(user['id']), 'photo_url': receive_data[1]}
-            if receive_data:
+            # проверяем нет ли человека в базе
+            if not is_person_in_db(user_id, search_results['person_id']):
+                # сохраняем запись
+                save_search_results(user_id, search_results)
+                # возвращаем ссылку на профиль и фотки
                 write_msg(user_id, receive_data[0])
                 send_photo(user_id, receive_data[1])
-                save_search_results(user_id, search_results)
 
 
 

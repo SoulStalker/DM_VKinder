@@ -5,7 +5,7 @@ from database import db_engine
 Base = declarative_base()
 
 
-class SearchResults(Base):
+class Persons(Base):
     __tablename__ = 'search_results'
 
     id = Column(Integer, primary_key=True)

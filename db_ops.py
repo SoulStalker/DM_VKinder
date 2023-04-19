@@ -5,43 +5,38 @@
 from sqlalchemy.orm import DeclarativeMeta
 
 from database import db
-from models import SearchResults
-
-# class Handling():
-#     def __init__(self, db_name):
-#         pass
-# def close(self):
-    #     self.conn.close()
+from models import Persons, Favorites, Blacklist
 
 
-def insert_data(db: db, model: DeclarativeMeta, kw_data: dict):
+def insert_data(data_base: db, model: DeclarativeMeta, kw_data: dict):
+    # функция вставки данных в базу
     new_data = model(**kw_data)
-    db.add(new_data)
-    db.commit()
+    data_base.add(new_data)
+    data_base.commit()
 
 
 def save_search_results(user_id, search_results):
     # сохранение данных о результатах поиска в базу
-    # for result in search_results:
     data = {
         'user_id': user_id,
         'person_id': search_results['person_id'],
         'photo_url': search_results['photo_url']
     }
-    insert_data(db, SearchResults, data)
+    insert_data(db, Persons, data)
 
 
+def is_person_in_db(user, person):
+    # проверка наличия записи в базе
+    return db.query(Persons).filter_by(user_id=user, person_id=person).first() is not None
 
-    # def add_to_favorites(self, user_id, person_id):
-    #     self.cursor.execute('INSERT INTO favorites VALUES (%s, %s)', (user_id, person_id))
-    #     self.conn.commit()
-    #
-    # def add_to_blacklist(self, user_id, person_id):
-    #     self.cursor.execute('INSERT INTO blacklist VALUES (%s, %s)', (user_id, person_id))
-    #     self.conn.commit()
-    #
-    # def is_person_in_database(self, person_id):
-    #     self.cursor.execute('SELECT * FROM search_results WHERE person_id = %s', (person_id,))
-    #     return self.cursor.fetchone() is not None
-    #
 
+def add_to_favorites(user, person):
+    # добавление в избранное
+    data = {'user_id': user, 'person_id': person}
+    insert_data(db, Favorites, data)
+
+
+def add_to_blaklist(user, person):
+    # добавление в черный список
+    data = {'user_id': user, 'person_id': person}
+    insert_data(db, Blacklist, data)

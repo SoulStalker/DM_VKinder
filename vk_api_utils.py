@@ -4,7 +4,7 @@ import datetime
 import vk_api
 from vk_api.longpoll import VkLongPoll, VkEventType
 from auth import gr_token, login, passwd
-from db_ops import save_search_results, is_person_in_db
+from db_ops import Handling
 
 gr_session = vk_api.VkApi(token=gr_token)
 gr = gr_session.get_api()
@@ -66,9 +66,9 @@ def get_user_info(user_id):
 
 def get_top_photos(user_id):
     vk = vk_session.get_api()
-    gr = gr_session.get_api()
-    # Получаем информацию о пользователе
-    user_info = vk.users.get(user_ids=user_id, fields='photo_max_orig')[0]
+    # gr = gr_session.get_api()
+    # # Получаем информацию о пользователе
+    # user_info = vk.users.get(user_ids=user_id, fields='photo_max_orig')[0]
     # Получение списка фотографий пользователя
     photos = vk.photos.get(owner_id=user_id, album_id='profile', extended=1)
     # Сортировка списка фотографий по количеству лайков
@@ -86,7 +86,8 @@ def search_users(user_id):
     user_info = get_user_info(user_id)
     vk = vk_session.get_api()
     users = vk.users.search(
-        q='',  # Пустой запрос, чтобы получить всех пользователей
+        q='',
+        # Пустой запрос, чтобы получить всех пользователей
         city=user_info['city']['id'],
         age_from=current_year - int(user_info['bdate'].split('.')[2]),
         age_to=current_year - int(user_info['bdate'].split('.')[2]),
@@ -101,13 +102,13 @@ def search_users(user_id):
             receive_data = get_top_photos(user['id'])
             search_results = {'person_id': int(user['id']), 'photo_url': receive_data[1]}
             # проверяем нет ли человека в базе
-            if not is_person_in_db(user_id, search_results['person_id']):
+            handler = Handling(user_id, search_results['person_id'], search_results['photo_url'])
+            if not handler.is_person_in_db():
                 # сохраняем запись
-                save_search_results(user_id, search_results)
+                handler.save_search_results()
                 # возвращаем ссылку на профиль и фотки
                 write_msg(user_id, receive_data[0])
                 send_photo(user_id, receive_data[1])
-
 
 
 def vk_long_poll():

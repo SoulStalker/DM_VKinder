@@ -3,8 +3,39 @@ import datetime
 
 import vk_api
 from vk_api.longpoll import VkLongPoll, VkEventType
+from vk_api.keyboard import VkKeyboard, VkKeyboardColor
 from auth import gr_token, login, passwd
 from db_ops import Handling
+
+
+class VkBot:
+    def __init__(self):
+        self.gr_session = vk_api.VkApi(token=gr_token)
+        self.longpoll = VkLongPoll(self.gr_session)
+        self.gr = self.gr_session.get_api()
+        self.buttons = [
+            {'label': 'Кнопка 1', 'color': VkKeyboardColor.PRIMARY},
+            {'label': 'Кнопка 2', 'color': VkKeyboardColor.PRIMARY}
+        ]
+        self.kb = self.create_keyboard(buttons=self.buttons
+                                       )
+
+    def create_keyboard(self, buttons, one_time=False):
+        keyboard = VkKeyboard(one_time=one_time)
+        for button in buttons:
+            keyboard.add_button(button['label'], color=buttons['color'])
+        return keyboard.get_keyboard()
+
+    def write_msg(self, user: int, text: str, url=None):
+        # функция отправки сообщения
+        gr.messages.send(
+            user_id=user,
+            message=text,
+            keybard=self.kb(),
+            attachment=url,
+            random_id=randrange(10 ** 7)
+        )
+
 
 gr_session = vk_api.VkApi(token=gr_token)
 gr = gr_session.get_api()
@@ -39,22 +70,13 @@ vk = vk_session.get_api()
 access_token = vk_session.token['access_token']
 
 
-def write_msg(id, text):
-    # функция отправки сообщения
-    gr.messages.send(
-        user_id=id,
-        message=text,
-        random_id=randrange(10 ** 7)
-    )
-
-
-def send_photo(id, url):
-    # функция отправки фото
-    gr.messages.send(
-        user_id=id,
-        attachment=url,
-        random_id=randrange(10 ** 7)
-    )
+# def send_photo(id, url):
+#     # функция отправки фото
+#     gr.messages.send(
+#         user_id=id,
+#         attachment=url,
+#         random_id=randrange(10 ** 7)
+#     )
 
 
 def get_user_info(user_id):
@@ -107,8 +129,8 @@ def search_users(user_id):
                 # сохраняем запись
                 handler.save_search_results()
                 # возвращаем ссылку на профиль и фотки
-                write_msg(user_id, receive_data[0])
-                send_photo(user_id, receive_data[1])
+                VkBot.write_msg(user_id, receive_data[0], receive_data[1])
+                # send_photo(user_id, receive_data[1])
 
 
 def vk_long_poll():
@@ -117,12 +139,14 @@ def vk_long_poll():
             if event.to_me:
                 request = event.text.lower()
                 user_id = event.user_id
-
-                if request == "привет":
-                    write_msg(user_id, f"Привет, {get_user_info(user_id)['first_name']}")
+                if request == "привет" or request == "start":
+                    # keyboard = VkKeyboard()
+                    # keyboard.add_button("Поиск", color=VkKeyboardColor.NEGATIVE)
+                    # keyboard.add_line()
+                    VkBot.write_msg(user=user_id, text=f"Привет, {get_user_info(user_id)['first_name']}")
                 elif request == "пока":
-                    write_msg(user_id, f"Пока, {get_user_info(user_id)}")
+                    VkBot.write_msg(user=user_id, text=f"Пока, {get_user_info(user_id)}")
                 elif request == "поиск":
                     search_users(user_id)
                 else:
-                    write_msg(user_id, "Не понял вашего ответа...")
+                    VkBot.write_msg(user_id, "Не понял вашего ответа...")

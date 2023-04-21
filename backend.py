@@ -1,7 +1,6 @@
 import datetime
 import vk_api
 
-from db_ops import Handling
 from auth import vk_token
 
 
@@ -24,7 +23,7 @@ class VkBackend:
                      }
         return user_info
 
-    def search_users(self, params, user_id):
+    def search_users(self, params):
 
         current_year = datetime.datetime.now().year
         age_from = current_year - int(params['bdate'].split('.')[2]) - 4,
@@ -38,7 +37,7 @@ class VkBackend:
                                      'offset': 0,
                                      'age_from': age_from,
                                      'age_to': age_to,
-                                     'sex:': sex,
+                                     'sex:': 1,
                                      'status': status,
                                      'is_closed': False,
                                      'home_town': home_town
@@ -57,18 +56,7 @@ class VkBackend:
                 search_results = {'id': user['id'], 'name': user['first_name'] + ' ' + user['last_name'], 'photo_url': receive_data[1]}
                 res.append(search_results)
 
-            # handler = Handling(user_id, search_results[user['id']], search_results['photo_url'])
-            # if not handler.is_person_in_db():
-            #     handler.save_search_results()
-
         return res
-
-        # handler = Handling(user_id, search_results['person_id'], search_results['photo_url'])
-        # if not handler.is_person_in_db():
-        #     handler.save_search_results()
-        #     # возвращаем ссылку на профиль и фотки
-        #     front_api.write_msg(user_id, receive_data[0], receive_data[1])
-        #     # send_photo(user_id, receive_data[1])
 
     def get_top_photos(self, user_id):
         photos = self.api.method('photos.get',

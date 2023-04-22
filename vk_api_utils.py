@@ -21,6 +21,7 @@ class VkFront:
         keyboard.add_line()
         keyboard.add_button('Поиск', color=VkKeyboardColor.PRIMARY)
         keyboard.add_button('Дальше', color=VkKeyboardColor.PRIMARY)
+
         return keyboard.get_keyboard()
 
     def write_msg(self, user: int, text: str, url=None, kb=None):
@@ -52,18 +53,40 @@ class VkFront:
                         self.write_msg(user=user_id, text=f"Пока, {self.params['name']}", kb=keyboard)
                     elif request == "поиск":
                         keyboard = self.create_keyboard()
-                        self.write_msg(user_id,
-                                       f'Найдено {len(res_users)} пользователей.Нажмите "Дальше" для просмотра следующего пользователя', kb=keyboard)
-                        if len(res_users) == 0:
-                            self.write_msg(user_id,
-                                           f'Нажмите "Поиск" для повторного поиска',
-                                           kb=keyboard)
+                        required_params = ['sex', 'bdate', 'home_town']
+                        params = self.params
+                        for param in required_params:
+                            if not params[param]:
+                                print(param)
+                                if param == 'sex':
+                                    if request == 'мужской':
+                                        self.params[param] = 1
+                                        break
+                                    elif request == 'женский':
+                                        self.params = 2
+                                        break
+                                    else:
+                                        self.write_msg(user_id, 'Введите ваш пол "мужской" или "женский":')
+                                elif param == 'bdate':
+                                    if request.isdigit():
+                                        self.params[param] = int(request)
+                                    else:
+                                        self.write_msg(user_id, 'Введите ваш возраст:')
+                                elif param == 'home_town':
+                                    self.write_msg(user_id, 'Введите город поиска:')
+                                    self.params[param] = request
+                                    break
                         users = self.api.search_users(self.params)
                         for user in users:
                             db_handler = Handling(user_id, user['id'], user['photo_url'])
                             if not db_handler.is_person_in_db():
                                 res_users.append(user)
+
+                        self.write_msg(user_id,
+                                       f'Найдено {len(res_users)} пользователей.'
+                                       f'Нажмите "Дальше" для просмотра следующего пользователя', kb=keyboard)
                     elif request == 'дальше':
+                        keyboard = self.create_keyboard()
                         if not res_users:
                             self.write_msg(user_id, f'Нажмите "Поиск" для начала поиска', kb=keyboard)
                         else:
@@ -74,7 +97,7 @@ class VkFront:
                             self.write_msg(user_id, f'{user["name"]}\nСсылка на профиль: https://vk.com/id{user["id"]}',
                                            photos_user, kb=keyboard)
                             db_handler.save_search_results()
-                            # offset += 1
+                            offset += 1
                     else:
                         keyboard = self.create_keyboard()
                         self.write_msg(user_id, "Неизвестный запрос", kb=keyboard)

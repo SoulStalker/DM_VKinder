@@ -16,17 +16,15 @@ class Persons(Base):
 class Favorites(Base):
     __tablename__ = 'favorites'
 
-    id = Column(Integer, primary_key=True)
-    user_id = Column(Integer)
-    person_id = Column(Integer)
+    user_id = Column(Integer, primary_key=True)
+    person_id = Column(Integer, primary_key=True)
 
 
 class Blacklist(Base):
     __tablename__ = 'blacklist'
 
-    id = Column(Integer, primary_key=True)
-    user_id = Column(Integer)
-    person_id = Column(Integer)
+    user_id = Column(Integer, primary_key=True)
+    person_id = Column(Integer, primary_key=True)
 
 
 def create_db():

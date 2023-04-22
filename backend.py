@@ -12,19 +12,18 @@ class VkBackend:
 
         info, = self.api.method('users.get',
                                 {'user_id': user_id,
-                                 'fields': 'city,bdate,sex,relation,home_town'
+                                 'fields': 'home_town,bdate,sex,relation,home_town'
                                  })
         user_info = {'name': info['first_name'] + ' '+ info['last_name'],
-                     'id':  info['id'],
+                     'id':  info['id'] if 'bdate' in info else None,
                      'bdate': info['bdate'] if 'bdate' in info else None,
-                     'home_town': info['home_town'],
-                     'sex': info['sex'],
-                     'city': info['city']['id']
+                     # 'home_town': info['home_town'] if 'home_town' in info else None,
+                     'sex': info['sex'] if 'sex' in info else None,
+                     'home_town': info['home_town'] if 'home_town' in info else None,
                      }
         return user_info
 
     def search_users(self, params, offset=0):
-
         current_year = datetime.datetime.now().year
         age_from = current_year - int(params['bdate'].split('.')[2]) - 10,
         age_to = current_year - int(params['bdate'].split('.')[2]) + 10,

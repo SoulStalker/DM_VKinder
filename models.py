@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean
+from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import declarative_base
 from database import db_engine
 
@@ -6,11 +6,10 @@ Base = declarative_base()
 
 
 class Persons(Base):
-    __tablename__ = 'search_results'
+    __tablename__ = 'persons'
 
-    id = Column(Integer, primary_key=True)
-    user_id = Column(Integer)
-    person_id = Column(Integer)
+    user_id = Column(Integer, primary_key=True)
+    person_id = Column(Integer, primary_key=True)
     photo_url = Column(String)
 
 

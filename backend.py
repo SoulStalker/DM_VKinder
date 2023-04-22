@@ -23,21 +23,21 @@ class VkBackend:
                      }
         return user_info
 
-    def search_users(self, params):
+    def search_users(self, params, offset=0):
 
         current_year = datetime.datetime.now().year
-        age_from = current_year - int(params['bdate'].split('.')[2]) - 4,
-        age_to = current_year - int(params['bdate'].split('.')[2]) + 4,
+        age_from = current_year - int(params['bdate'].split('.')[2]) - 20,
+        age_to = current_year - int(params['bdate'].split('.')[2]) + 20,
         sex = 1 if params['sex'] == 2 else 2,
         status = params.get('relation', 6),
         home_town = params['home_town']
 
         users = self.api.method('users.search',
-                                    {'count': 30,
-                                     'offset': 0,
+                                    {'count': 50,
+                                     'offset': offset,
                                      'age_from': age_from,
                                      'age_to': age_to,
-                                     'sex:': 1,
+                                     'sex:': sex,
                                      'status': status,
                                      'is_closed': False,
                                      'home_town': home_town

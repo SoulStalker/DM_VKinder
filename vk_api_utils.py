@@ -39,7 +39,7 @@ class VkFront:
 
     def vk_long_poll(self):
         longpoll = VkLongPoll(self.interface)
-        users = []
+        offset = 0
 
         for event in longpoll.listen():
             if event.type == VkEventType.MESSAGE_NEW:
@@ -49,23 +49,26 @@ class VkFront:
                     self.params = self.api.get_user_info(user_id)
 
                     if request == "привет" or request == "start":
-                        self.write_msg(user=user_id, text=f"Привет, {self.params['name']}")
+                        self.write_msg(user=user_id, text=f"Здарова зайбал, {self.params['name']}")
                     elif request == "пока":
-                        self.write_msg(user=user_id, text=f"Пока, {self.api.get_user_info(user_id)}")
+                        self.write_msg(user=user_id, text=f"Пока, {self.params['name']}")
                     elif request == "поиск":
                         users = self.api.search_users(self.params)
+                        res_users = []
+                        for user in users:
+                            db_handler = Handling(user_id, user['id'], user['photo_url'])
+                            if not db_handler.is_person_in_db():
+                                res_users.append(user)
                         self.write_msg(user_id,
-                                       f'Найдено {len(users)} пользователей. Введите "следующий" для просмотра следующего пользователя')
-                    elif request == 'следующий' and users:
-                        user = users.pop(0)
+                                       f'Найдено {len(res_users)} пользователей. Введите "следующий" для просмотра следующего пользователя')
+                    elif request == 'следующий' and res_users:
+                        user = res_users.pop(0)
                         db_handler = Handling(user_id, user['id'], user['photo_url'])
-                        if db_handler.is_person_in_db():
-                            continue
-                        else:
-                            db_handler.save_search_results()
-                            photos_user = self.api.get_top_photos(user['id'])
-                            self.write_msg(user_id, f'{user["name"]}\nСсылка на профиль: https://vk.com/id{user["id"]}',
-                                           photos_user)
+                        photos_user = self.api.get_top_photos(user['id'])
+                        self.write_msg(user_id, f'{user["name"]}\nСсылка на профиль: https://vk.com/id{user["id"]}',
+                                       photos_user)
+                        db_handler.save_search_results()
+                        offset += 1
                     else:
                         self.write_msg(user_id, "Неизвестный запрос")
 

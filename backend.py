@@ -26,8 +26,8 @@ class VkBackend:
     def search_users(self, params, offset=0):
 
         current_year = datetime.datetime.now().year
-        age_from = current_year - int(params['bdate'].split('.')[2]) - 20,
-        age_to = current_year - int(params['bdate'].split('.')[2]) + 20,
+        age_from = current_year - int(params['bdate'].split('.')[2]) - 10,
+        age_to = current_year - int(params['bdate'].split('.')[2]) + 10,
         sex = 1 if params['sex'] == 2 else 2,
         status = params.get('relation', 6),
         home_town = params['home_town']

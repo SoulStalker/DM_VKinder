@@ -13,25 +13,21 @@ class VkFront:
         self.interface = vk_api.VkApi(token=gr_token)
         self.api = VkBackend(vk_token)
         self.params = None
-        # self.buttons = [
-        #     {'label': 'Кнопка 1', 'color': VkKeyboardColor.PRIMARY},
-        #     {'label': 'Кнопка 2', 'color': VkKeyboardColor.PRIMARY}
-        # ]
-        # self.kb = self.create_keyboard(buttons=self.buttons
-        #                                )
 
-    #
-    # def create_keyboard(self, buttons, one_time=False):
-    #     keyboard = VkKeyboard(one_time=one_time)
-    #     for button in buttons:
-    #         keyboard.add_button(button['label'], color=buttons['color'])
-    #     return keyboard.get_keyboard()
+    def create_keyboard(self, one_time=False):
+        keyboard = VkKeyboard(one_time=one_time)
+        keyboard.add_button('Старт', color=VkKeyboardColor.PRIMARY)
+        keyboard.add_button('Пока', color=VkKeyboardColor.PRIMARY)
+        keyboard.add_line()
+        keyboard.add_button('Поиск', color=VkKeyboardColor.PRIMARY)
+        keyboard.add_button('Дальше', color=VkKeyboardColor.PRIMARY)
+        return keyboard.get_keyboard()
 
-    def write_msg(self, user: int, text: str, url=None):
+    def write_msg(self, user: int, text: str, url=None, kb=None):
         self.interface.method('messages.send',
                               {'user_id': user,
                                'message': text,
-                               # keybard=self.kb(),
+                               'keyboard': kb,
                                'attachment': url,
                                'random_id': get_random_id()
                                }
@@ -40,6 +36,7 @@ class VkFront:
     def vk_long_poll(self):
         longpoll = VkLongPoll(self.interface)
         offset = 0
+        res_users = []
 
         for event in longpoll.listen():
             if event.type == VkEventType.MESSAGE_NEW:
@@ -47,30 +44,33 @@ class VkFront:
                     request = event.text.lower()
                     user_id = event.user_id
                     self.params = self.api.get_user_info(user_id)
-
-                    if request == "привет" or request == "start":
-                        self.write_msg(user=user_id, text=f"Здарова зайбал, {self.params['name']}")
+                    if request == "привет" or request == "старт":
+                        keyboard = self.create_keyboard()
+                        self.write_msg(user=user_id, text=f"Привет, {self.params['name']}", kb=keyboard)
                     elif request == "пока":
-                        self.write_msg(user=user_id, text=f"Пока, {self.params['name']}")
+                        keyboard = self.create_keyboard()
+                        self.write_msg(user=user_id, text=f"Пока, {self.params['name']}", kb=keyboard)
                     elif request == "поиск":
+                        keyboard = self.create_keyboard()
+                        self.write_msg(user_id,
+                                       f'Найдено {len(res_users)} пользователей.Нажмите "Дальше" для просмотра следующего пользователя', kb=keyboard)
                         users = self.api.search_users(self.params)
-                        res_users = []
                         for user in users:
                             db_handler = Handling(user_id, user['id'], user['photo_url'])
                             if not db_handler.is_person_in_db():
                                 res_users.append(user)
-                        self.write_msg(user_id,
-                                       f'Найдено {len(res_users)} пользователей. Введите "следующий" для просмотра следующего пользователя')
-                    elif request == 'следующий' and res_users:
+                    elif request == 'дальше' and res_users:
                         user = res_users.pop(0)
                         db_handler = Handling(user_id, user['id'], user['photo_url'])
                         photos_user = self.api.get_top_photos(user['id'])
-                        self.write_msg(user_id, f'{user["name"]}\nСсылка на профиль: https://vk.com/id{user["id"]}',
-                                       photos_user)
+                        keyboard = self.create_keyboard(one_time=True)
+                        self.write_msg(user_id, f'{user["name"]}nСсылка на профиль: https://vk.com/id{user["id"]}',
+                                       photos_user, kb=keyboard)
                         db_handler.save_search_results()
-                        offset += 1
+                        # offset += 1
                     else:
-                        self.write_msg(user_id, "Неизвестный запрос")
+                        keyboard = self.create_keyboard()
+                        self.write_msg(user_id, "Неизвестный запрос", kb=keyboard)
 
 
 if __name__ == '__main__':

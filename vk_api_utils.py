@@ -76,6 +76,9 @@ class VkFront:
                             break
                         elif param == 'home_town':
                             self.write_msg(user_id, 'Введите город поиска:')
+
+                            request, user_id = self.vk_long_poll()
+
                             self.params[param] = request
                             break
                 users = self.api.search_users(self.params)

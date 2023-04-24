@@ -5,13 +5,19 @@ from models import Persons, Favorites, Blacklist
 
 
 class Handling:
+    """
+    Клас для общения с БД
+    """
     def __init__(self, user_id, person_id, photo_url):
         self.user_id = user_id
         self.person_id = person_id
         self.photo_url = photo_url
 
     def save_search_results(self):
-        # сохранение данных о результатах поиска в базу
+        """
+        Сохранение данных о результатах поиска в базу.
+        :return: None
+        """
         data = {
             'user_id': self.user_id,
             'person_id': self.person_id,
@@ -20,7 +26,10 @@ class Handling:
         insert_data(db, Persons, data)
 
     def is_person_in_db(self):
-        # проверка наличия записи в базе
+        """
+        Проверка наличия записи в базе.
+        :return: Bool
+        """
         return db.query(Persons).filter_by(
             user_id=self.user_id,
             person_id=self.person_id

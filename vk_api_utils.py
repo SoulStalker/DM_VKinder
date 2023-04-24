@@ -16,6 +16,11 @@ class VkFront:
         self.res_users = []
 
     def create_keyboard(self, one_time=False):
+        """
+        Клавиатура для общения с пользователем.
+        :param one_time: единоразовая или постоянная.
+        :return: метод клавитуры для ВК
+        """
         keyboard = VkKeyboard(one_time=one_time)
         keyboard.add_button('Старт', color=VkKeyboardColor.PRIMARY)
         keyboard.add_button('Пока', color=VkKeyboardColor.PRIMARY)
@@ -26,6 +31,14 @@ class VkFront:
         return keyboard.get_keyboard()
 
     def write_msg(self, user: int, text: str, url=None, kb=None):
+        """
+        Отправка сообщения в диалог
+        :param user: id пользователя
+        :param text: текс сообщения
+        :param url: ссылка(ссылки) на вложение
+        :param kb: клавиатура
+        :return: None
+        """
         self.interface.method('messages.send',
                               {'user_id': user,
                                'message': text,
@@ -36,6 +49,10 @@ class VkFront:
                               )
 
     def vk_long_poll(self):
+        """
+        Метод прослушивания диалога.
+        :return: ответ пользователя и его id
+        """
         longpoll = VkLongPoll(self.interface)
         for event in longpoll.listen():
             if event.type == VkEventType.MESSAGE_NEW:
@@ -44,6 +61,10 @@ class VkFront:
                     return request, event.user_id
 
     def bot(self):
+        """
+        Основной метод взаимодействия бота с пользователем.
+        :return: None
+        """
         while True:
             offset = 0
             request, user_id = self.vk_long_poll()
@@ -59,8 +80,6 @@ class VkFront:
                 required_params = ['sex', 'bdate', 'home_town']
                 params = self.params
 
-                print(params)
-
                 for param in required_params:
                     if not params[param]:
                         if param == 'sex':
@@ -68,23 +87,16 @@ class VkFront:
                             request, user_id = self.vk_long_poll()
                             if request == 'мужской':
                                 self.params[param] = 1
-                                # break
                             elif request == 'женский':
                                 self.params = 2
-                                # break
                         elif param == 'bdate':
-
-                            print(self.params[param])
-
                             self.write_msg(user_id, 'Введите дату вашего рождения:')
                             request, user_id = self.vk_long_poll()
                             self.params[param] = request
-                            # break
                         elif param == 'home_town':
                             self.write_msg(user_id, 'Введите город поиска:')
                             request, user_id = self.vk_long_poll()
                             self.params[param] = request
-                            # break
                 users = self.api.search_users(self.params)
                 offset += 1000
 
@@ -108,7 +120,8 @@ class VkFront:
                     keyboard = self.create_keyboard(one_time=True)
                     self.write_msg(user_id, f'{user["name"]}\nСсылка на профиль: https://vk.com/id{user["id"]}',
                                    photos_user, kb=keyboard)
-                    db_handler.save_search_results()
+                    if not db_handler.is_person_in_db():
+                        db_handler.save_search_results()
             else:
                 keyboard = self.create_keyboard()
                 self.write_msg(user_id, "Неизвестный запрос", kb=keyboard)

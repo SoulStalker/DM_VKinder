@@ -9,21 +9,30 @@ class VkBackend:
         self.api = vk_api.VkApi(token=access_token)
 
     def get_user_info(self, user_id):
-
+        """
+        Получение информации о человеке по его id
+        :param user_id: id человека из ВК
+        :return: словарь инфо о человеке (город, дата рождения, пол, статус)
+        """
         info, = self.api.method('users.get',
                                 {'user_id': user_id,
-                                 'fields': 'home_town,bdate,sex,relation,home_town'
+                                 'fields': 'home_town,bdate,sex,relation'
                                  })
         user_info = {'name': info['first_name'] + ' '+ info['last_name'],
                      'id':  info['id'] if 'bdate' in info else None,
                      'bdate': info['bdate'] if 'bdate' in info else None,
-                     # 'home_town': info['home_town'] if 'home_town' in info else None,
                      'sex': info['sex'] if 'sex' in info else None,
                      'home_town': info['home_town'] if 'home_town' in info else None,
                      }
         return user_info
 
     def search_users(self, params, offset=0):
+        """
+        Поиск людей в ВК по заданным параметрам.
+        :param params: параметры передает класс VkFront.
+        :param offset: офсет для преодоления ограничения поиска.
+        :return: id человка, его имя и фамилия и ссылка на три популярные фото.
+        """
         current_year = datetime.datetime.now().year
         age_from = current_year - int(params['bdate'].split('.')[2]) - 10,
         age_to = current_year - int(params['bdate'].split('.')[2]) + 10,
@@ -58,6 +67,11 @@ class VkBackend:
         return res
 
     def get_top_photos(self, user_id):
+        """
+        Метод для получения топ три популярных фото.
+        :param user_id: id человека ВК
+        :return: ссылка на профиль и три фото
+        """
         photos = self.api.method('photos.get',
                                  {'user_id': user_id,
                                   'album_id': 'profile',

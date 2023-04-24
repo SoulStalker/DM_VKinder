@@ -48,6 +48,28 @@ class VkFront:
                                }
                               )
 
+    def check_params(self, user_id):
+        required_params = ['sex', 'bdate', 'home_town']
+        params = self.params
+        for param in params:
+            if param in required_params:
+                if param == 'sex':
+                    self.write_msg(user_id, 'Введите ваш пол "мужской" или "женский":')
+                    request, user_id = self.vk_long_poll()
+                    if request == 'мужской':
+                        self.params[param] = 1
+                    elif request == 'женский':
+                        self.params = 2
+                elif param == 'bdate':
+                    self.write_msg(user_id, 'Введите дату вашего рождения в формате ДД.ММ.ГГГГ:')
+                    request, user_id = self.vk_long_poll()
+                    self.params[param] = request
+                elif param == 'home_town':
+                    self.write_msg(user_id, 'Введите город поиска:')
+                    request, user_id = self.vk_long_poll()
+                    self.params[param] = request
+        return params
+
     def vk_long_poll(self):
         """
         Метод прослушивания диалога.
@@ -77,28 +99,10 @@ class VkFront:
                 self.write_msg(user=user_id, text=f"Пока, {self.params['name']}", kb=keyboard)
             elif request == "поиск":
                 keyboard = self.create_keyboard()
-                required_params = ['sex', 'bdate', 'home_town']
-                params = self.params
 
-                for param in required_params:
-                    if not params[param]:
-                        if param == 'sex':
-                            self.write_msg(user_id, 'Введите ваш пол "мужской" или "женский":')
-                            request, user_id = self.vk_long_poll()
-                            if request == 'мужской':
-                                self.params[param] = 1
-                            elif request == 'женский':
-                                self.params = 2
-                        elif param == 'bdate':
-                            self.write_msg(user_id, 'Введите дату вашего рождения:')
-                            request, user_id = self.vk_long_poll()
-                            self.params[param] = request
-                        elif param == 'home_town':
-                            self.write_msg(user_id, 'Введите город поиска:')
-                            request, user_id = self.vk_long_poll()
-                            self.params[param] = request
-                users = self.api.search_users(self.params)
-                offset += 1000
+                users = self.api.search_users(self.check_params(user_id=user_id))
+
+                offset += 1
 
                 for user in users:
                     db_handler = Handling(user_id, user['id'], user['photo_url'])

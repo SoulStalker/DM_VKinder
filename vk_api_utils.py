@@ -68,15 +68,15 @@ class VkFront:
                                     else:
                                         self.write_msg(user_id, 'Введите ваш пол "мужской" или "женский":')
                                 elif param == 'bdate':
-                                    if request.isdigit():
-                                        self.params[param] = int(request)
-                                    else:
-                                        self.write_msg(user_id, 'Введите ваш возраст:')
+                                    self.write_msg(user_id, 'Введите дату вашего рождения:')
+                                    self.params[param] = '08.08.1988'
+                                    break
                                 elif param == 'home_town':
                                     self.write_msg(user_id, 'Введите город поиска:')
-                                    self.params[param] = request
+                                    self.params[param] = event.text.lower()
                                     break
                         users = self.api.search_users(self.params)
+                        print(self.params)
                         for user in users:
                             db_handler = Handling(user_id, user['id'], user['photo_url'])
                             if not db_handler.is_person_in_db():
